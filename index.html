@@ -228,7 +228,7 @@
         showSpinOverlay(pool, winner);
         const track = document.getElementById("reelTrack");
         const step = 104;
-        const stopIndex = 62;   // winner placed exactly under pointer
+        const stopIndex = 62;   // winner is placed at this exact index
 
         track.style.transition = "none";
         track.style.transform = "translateX(0px)";
@@ -274,7 +274,7 @@
 
       const reelTrack = document.getElementById("reelTrack");
       const reel = Array.from({ length: 72 }, (_, i) => pool[i % pool.length]);
-      reel[62] = winner;   // winner placed exactly where pointer stops
+      reel[62] = winner;   // winner placed exactly where pointer will stop
       reelTrack.innerHTML = reel.map(r => `<div class="grid h-24 w-20 shrink-0 place-items-center rounded-2xl border border-white/10 bg-white/10 text-4xl">${r.emoji}</div>`).join("");
     }
 
