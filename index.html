@@ -115,12 +115,28 @@
       bindEvents();
     }
 
-    function topTab() { /* unchanged */ return `...same as before...`; } // (full code is too long, but identical to your original)
-    function lotteriesTab() { return `...same...`; }
-    function profileTab() { return `...same...`; }
-    function bottomItem(key, icon, label) {
-      const active = state.tab === key;
-      return `<button data-tab="${key}" class="tab-btn rounded-2xl px-2 py-2 ${active ? "bg-blue-500/20 text-blue-400" : "text-slate-300 hover:bg-white/5"}"><div class="text-base">${icon}</div><div class="mt-1">${label}</div></button>`;
+    function topTab() {
+      return `
+        <section class="space-y-4">
+          <div class="glass rounded-3xl p-5">
+            <div class="text-5xl mb-3">🏆</div>
+            <h2 class="text-xl font-semibold">Leaderboard</h2>
+            <p class="mt-1 text-sm text-slate-300">Here you can see the most active players</p>
+            <div class="mt-4 grid grid-cols-2 gap-2 rounded-2xl bg-white/5 p-1">
+              <button data-region="regional" class="region-btn rounded-xl px-3 py-2 ${state.region === "regional" ? "bg-blue-500 text-white" : "text-slate-300"}">Regional</button>
+              <button data-region="worldwide" class="region-btn rounded-xl px-3 py-2 ${state.region === "worldwide" ? "bg-blue-500 text-white" : "text-slate-300"}">Worldwide</button>
+            </div>
+          </div>
+          <div class="glass rounded-3xl p-3 space-y-2">
+            ${leaderboard.map((u, i) => `
+              <div class="flex items-center justify-between rounded-2xl bg-white/5 px-3 py-2.5">
+                <div class="flex items-center gap-3"><div class="h-10 w-10 rounded-full bg-white/10 grid place-items-center text-lg">${u[0]}</div><div><p class="text-sm font-medium">${i+1}. ${u[1]}</p><p class="text-xs text-slate-300">${u[2]}</p></div></div>
+                <span class="text-xs text-yellow-400">+${Math.max(40-i*7, 12)}✨</span>
+              </div>
+            `).join("")}
+          </div>
+        </section>
+      `;
     }
 
     function playTab(tier, pool) {
@@ -155,6 +171,37 @@
       `;
     }
 
+    function lotteriesTab() {
+      return `
+        <section class="space-y-4">
+          <div class="glass rounded-3xl p-5">
+            <div class="text-3xl mb-4">🎟️</div>
+            <h2 class="text-xl font-semibold">Active Lotteries</h2>
+            <p class="text-slate-300">Lotteries created by owner will appear here</p>
+          </div>
+        </section>
+      `;
+    }
+
+    function profileTab() {
+      return `
+        <section class="space-y-4">
+          <div class="glass rounded-3xl p-5">
+            <div class="mx-auto mb-3 grid h-20 w-20 place-items-center rounded-full bg-white/10 text-3xl">👤</div>
+            <h2 class="text-center text-xl font-semibold">${state.userName}</h2>
+            <p class="mt-1 text-center text-sm text-slate-300">Collector</p>
+            <div class="mt-4 rounded-2xl bg-white/5 px-4 py-3 text-center"><p class="text-xs text-slate-300">Sparks balance</p><p class="mt-1 text-xl font-semibold text-yellow-400">✨ ${state.sparks}</p></div>
+          </div>
+          <div class="glass rounded-3xl p-4"><h3 class="mb-3 text-sm font-medium">Owned gifts</h3><div class="grid grid-cols-4 gap-2">${state.gifts.map(g => `<div class="grid h-16 place-items-center rounded-2xl bg-white/5 text-2xl">${g}</div>`).join("")}</div></div>
+        </section>
+      `;
+    }
+
+    function bottomItem(key, icon, label) {
+      const active = state.tab === key;
+      return `<button data-tab="${key}" class="tab-btn rounded-2xl px-2 py-2 ${active ? "bg-blue-500/20 text-blue-400" : "text-slate-300 hover:bg-white/5"}"><div class="text-base">${icon}</div><div class="mt-1">${label}</div></button>`;
+    }
+
     function bindEvents() {
       document.querySelectorAll(".tab-btn, .tier-btn, .region-btn").forEach(el => {
         el.addEventListener("click", () => {
@@ -178,9 +225,10 @@
 
       if (state.demo) {
         const winner = weightedPick(pool);
-        showSpinOverlay(pool);
+        showSpinOverlay(pool, winner);
         const track = document.getElementById("reelTrack");
         const step = 104;
+        const stopIndex = 62;   // winner placed exactly under pointer
 
         track.style.transition = "none";
         track.style.transform = "translateX(0px)";
@@ -195,7 +243,7 @@
         await wait(2100);
 
         track.style.transition = "transform 2800ms cubic-bezier(0.08, 0.86, 0.22, 1.03)";
-        track.style.transform = `translateX(${-62 * step}px)`;
+        track.style.transform = `translateX(${-stopIndex * step}px)`;
         await wait(2800);
 
         hideSpinOverlay();
@@ -208,7 +256,7 @@
       state.spinning = false;
     }
 
-    function showSpinOverlay(pool) {
+    function showSpinOverlay(pool, winner) {
       const overlay = document.createElement("div");
       overlay.id = "spinOverlay";
       overlay.className = "fixed inset-0 z-40 grid place-items-center bg-slate-950/95 px-4";
@@ -225,10 +273,9 @@
       document.body.appendChild(overlay);
 
       const reelTrack = document.getElementById("reelTrack");
-      reelTrack.innerHTML = Array.from({ length: 72 }, (_, i) => {
-        const item = pool[i % pool.length];
-        return `<div class="grid h-24 w-20 shrink-0 place-items-center rounded-2xl border border-white/10 bg-white/10 text-4xl">${item.emoji}</div>`;
-      }).join("");
+      const reel = Array.from({ length: 72 }, (_, i) => pool[i % pool.length]);
+      reel[62] = winner;   // winner placed exactly where pointer stops
+      reelTrack.innerHTML = reel.map(r => `<div class="grid h-24 w-20 shrink-0 place-items-center rounded-2xl border border-white/10 bg-white/10 text-4xl">${r.emoji}</div>`).join("");
     }
 
     function hideSpinOverlay() {
